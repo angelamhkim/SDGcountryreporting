@@ -1,0 +1,41 @@
+---
+title: "Env SDG Country Reporting"
+author: "Angela Kim"
+date: "June 18, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+UNSD SDGs API page can be accessed here: https://unstats.un.org/SDGAPI/swagger/#!/Series/V1SdgSeriesBySeriesCodeGeoAreasGet
+
+Start by creating a vector of the series you want to check and download the complete list of countries. 
+```{r series, message=FALSE, warning=FALSE}
+series <- c("VC_DSR_DAFF", "VC_DSR_LSGP", "SG_DSR_LGRGSR", "SG_DSR_SILS", "ER_GRF_ANIMSTOR", "ER_RSK_LBRED", "SH_STA_ASAIRP", "SH_STA_WASH", "SH_STA_POISN", "SH_H2O_SAFE", "EN_WWT_WWDS", "EN_H2O_WBAMBQ", "ER_H2O_WUEYST", "ER_H2O_STRESS", "ER_H2O_IWRMD", "EG_TBA_H2CO", "EN_WBE_PMPP", "DC_TOF_WASHL", "ER_WAT_PART", "EG_EGY_CLEAN", "EG_FEC_RNEW", "EG_EGY_PRIM", "EN_MAT_DOMCMPG",  "EN_ATM_CO2MVA", "VC_DSR_DAFF", "VC_DSR_LSGP", "EN_REF_WASCOL", "EN_ATM_PM25", "SG_DSR_LGRGSR", "SG_DSR_SILS", "SG_SCP_CNTRY",   "EN_MAT_DOMCMPG", "SG_HAZ_CMRBASEL", "ER_FFS_PRTSPR", "VC_DSR_DAFF", "SG_DSR_LGRGSR", "SG_DSR_SILS", "ER_H2O_FWTL", "ER_MRN_MARIN", "ER_REG_UNFCIM", "ER_RDE_OSEX", "AG_LND_FRST", "ER_PTD_FRWRT", "ER_PTD_TERRS", "AG_LND_FRSTPRCT", "ER_PTD_MOTN", "ER_MTN_GRNCVI",   "ER_RSK_LSTI", "ER_CBD_NAGOYA", "DC_ODA_BDVL", "DC_ODA_BDVL", "SG_INT_MBRDEV", "DC_FTA_TOTAL")
+
+countries <- fromJSON("https://unstats.un.org/SDGAPI/v1/sdg/GeoArea/List")
+```
+
+pasteurl is a function that makes the right API url for each series in the series vector you created. 
+```{r functions, message=FALSE, warning=FALSE}
+pasteurl <- function(series){
+  baseurl <- "https://unstats.un.org/SDGAPI/v1/sdg/Series/"
+  paste(baseurl, series, "/GeoAreas", sep="")
+}
+apiURLs <- as.vector(sapply(series, pasteurl))
+```
+
+This for loop will create a data frame where the first column is the complete list of GeoAreas and the subsequent columns show TRUE (has data) or FALSE (no data) for each of the series. 
+```{r}
+for (i in 1:length(series)){
+    dat <- fromJSON(apiURLs[i])
+    dat <- dat$geoAreaName
+    incountries <- countries$geoAreaName %in% dat
+    countries <- cbind(countries, incountries)
+}
+names(countries) <- c("GeoAreaCode", "geoAreaName", series)
+```
+
+
