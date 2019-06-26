@@ -11,9 +11,11 @@ library(shiny)
 library(jsonlite)
 library(DT)
 library(curl)
-library(rworldmap)
 library(plotly)
 library(RColorBrewer)
+library(dplyr)
+library(maps)
+library(viridis)
 
 # Define server logic required to draw a histogram
 
@@ -29,11 +31,10 @@ checkcountries <- function(series){
   for (i in 1:length(series)){
     apiURLs <- as.vector(sapply(series, pasteurl))
     dat <- fromJSON(apiURLs[i])
-    dat <- dat$geoAreaName
-    incountries <- as.numeric(as.vector(unlist(countries$CountryName %in% dat)))
+    dat <- dat$geoAreaCode
+    incountries <- as.numeric(as.vector(unlist(countries$M49 %in% dat)))
     countrieslist <- as.data.frame(cbind(countrieslist, incountries))
   }
-  names(countrieslist) <- c("Country", series)
   countrieslist
 }
 
@@ -59,6 +60,9 @@ shinyServer(function(input, output) {
       series <- c(series, "EN_LND_SLUM")
     }
     countrieslist <- checkcountries(series)
+    totmeans <- (rowSums(sapply(countrieslist[, -1, drop=FALSE], as.numeric))-1)/(ncol(countrieslist)-1)
+    countrieslist <- cbind(countrieslist, totmeans)
+    names(countrieslist) <- c("Country", series, "totmeans")
     return(countrieslist)
   }) 
   
@@ -75,12 +79,17 @@ shinyServer(function(input, output) {
      countrieslist()
    }))
   
-  output$mymap <- renderPlot({
+  output$mymap <- renderPlotly({
     countrieslist <- countrieslist()
-    totmeans <- (rowSums(sapply(countrieslist[, -1, drop=FALSE], as.numeric))-1)/(ncol(countrieslist)-1)
-    countrieslist <- cbind(countrieslist, totmeans)
-    spdf <- joinCountryData2Map(countrieslist, joinCode="NAME", nameJoinColumn = "Country")
-    mapCountryData(spdf, nameColumnToPlot = "totmeans", catMethod = "fixedWidth", mapTitle="Degree of Country-Level Reporting")
+    
+    avg_rep <- countrieslist[,c(1,ncol(countrieslist))]
+    names(avg_rep) <- c("region", "avg_val")
+    world_map <- map_data("world")
+    map_dat <- left_join(world_map,avg_rep, by = "region")
+    
+    ggplot(map_dat, aes(long, lat, group = group))+
+      geom_polygon(aes(fill = avg_val ), color = "black", size=0.1)+
+      scale_fill_viridis_c(option = "C")
   })
   
   output$barplot <- renderPlotly({
@@ -93,12 +102,10 @@ shinyServer(function(input, output) {
                  })
     countrieslist <- countrieslist()
     
-    totmeans <- (rowSums(sapply(countrieslist[, -1, drop=FALSE], as.numeric))-1)/(ncol(countrieslist)-1)
-    
-    LDCvalue <- mean(totmeans[which(countries$LDC==1)])
-    LLDCvalue <- mean(totmeans[which(countries$LLDC==1)])
-    SIDSvalue <- mean(totmeans[which(countries$SIDS==1)])
-    OECDvalue <- mean(totmeans[which(countries$OECD==1)])
+    LDCvalue <- mean(countrieslist$totmeans[which(countries$LDC==1)])
+    LLDCvalue <- mean(countrieslist$totmeans[which(countries$LLDC==1)])
+    SIDSvalue <- mean(countrieslist$totmeans[which(countries$SIDS==1)])
+    OECDvalue <- mean(countrieslist$totmeans[which(countries$OECD==1)])
     countrygroups <- c("LDC", "LLDC", "SIDS", "OECD")
     tempdat <- as.data.frame(cbind(countrygroups,c(LDCvalue, LLDCvalue, SIDSvalue, OECDvalue)))
     names(tempdat)<- c("group", "average_reporting")

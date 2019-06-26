@@ -22,9 +22,10 @@ dashboardPage(
     ),
     h4("Select indicators"),
     textInput("series", label="Series SDMX codes", value="VC_DSR_DAFF"),
+    h6("Go to the Indicators List tab to see which indicators are included in Environmental Indicators and Habitat Indicators"),
     checkboxInput("env", "Environmental indicators", value=FALSE),
     checkboxInput("habitat", "UN-Habitat indicators", value=FALSE),
-    actionButton("goButton", "Submit", icon=icon("arrow-right"))
+    submitButton("Submit", icon=icon("arrow-right"))
     
   ),
   
@@ -33,7 +34,7 @@ dashboardPage(
       tabItem("dashboard",
               fluidRow(
                 plotlyOutput("barplot"),
-                plotOutput("mymap")
+                plotlyOutput("mymap")
               )),
       tabItem("rawdat", 
               fluidRow(
@@ -47,7 +48,8 @@ dashboardPage(
                    the side panel separated by a space and those will be added to the list of Environmental Indicators."),
                 DT::dataTableOutput('envinds'),
                 h3("UN-Habitat Indicators", icon("city")),
-                DT::dataTableOutput("urbaninds")
+                h5("coming soon...")
+                #DT::dataTableOutput("urbaninds")
               ))
     
 )))
