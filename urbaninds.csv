@@ -1,0 +1,10 @@
+Indicator,Series,Series_Description
+4.5.1,SE_URP_REAACH,"Rural to urban parity index for achievement in reading, by education level (ratio)"
+6.2.1,SH_SAN_SAFE,"Proportion of population using safely managed sanitation services, by urban /rural (%)"
+11.1.1,EN_LND_SLUM,Proportion of urban population living in slums (%)
+11.5.1,VC_DSR_MTMP,"Number of deaths and missing persons attributed to disasters per 100,000 population (number) "
+11.5.2,VC_DSR_LSGP,Direct economic loss attributed to disasters relative to GDP (%)
+11.6.1,EN_REF_WASCOL,"Municipal Solid Waste collection coverage, by cities (%)"
+11.6.2,EN_ATM_PM25,"Annual mean levels of fine particulate matter in cities, urban population (micrograms per cubic meter)"
+11.b.1,SG_DSR_LGRGSR,Score of adoption and implementation of national DRR strategies in line with the Sendai Framework 
+11.b.2,SG_DSR_SILN,Number of local governments that adopt and implement local DRR strategies in line with national strategies (number)

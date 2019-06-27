@@ -23,6 +23,9 @@ countries <- read.csv("countries.csv")
 
 countrieslist <- as.vector(countries$CountryName)
 envinds <- read.csv("envinds.csv") 
+envseries <- as.vector(envinds$Series)
+urbaninds <- read.csv("urbaninds.csv")
+urbanseries <- as.vector(urbaninds$Series)
 pasteurl <- function(series){
   baseurl <- "https://unstats.un.org/SDGAPI/v1/sdg/Series/"
   paste(baseurl, series, "/GeoAreas", sep="")
@@ -45,24 +48,15 @@ shinyServer(function(input, output) {
     series <- input$series
     series <- as.vector(unlist((strsplit(series, split=" "))))
     if(input$env==TRUE){
-      series<- c(series, "VC_DSR_DAFF", "VC_DSR_LSGP", "SG_DSR_LGRGSR", "SG_DSR_SILS", "ER_GRF_ANIMSTOR", 
-                 "ER_RSK_LBRED", "SH_STA_ASAIRP", "SH_STA_WASH", "SH_STA_POISN", "SH_H2O_SAFE", 
-                 "EN_WWT_WWDS", "EN_H2O_WBAMBQ", "ER_H2O_WUEYST", "ER_H2O_STRESS", "ER_H2O_IWRMD", 
-                 "EG_TBA_H2CO", "EN_WBE_PMPP", "DC_TOF_WASHL", "ER_WAT_PART", "EG_EGY_CLEAN", 
-                 "EG_FEC_RNEW", "EG_EGY_PRIM", "EN_MAT_DOMCMPG",  "EN_ATM_CO2MVA", "VC_DSR_DAFF", 
-                 "VC_DSR_LSGP", "EN_REF_WASCOL", "EN_ATM_PM25", "SG_DSR_LGRGSR", "SG_DSR_SILS", 
-                 "SG_SCP_CNTRY",   "EN_MAT_DOMCMPG", "SG_HAZ_CMRBASEL", "ER_FFS_PRTSPR", "VC_DSR_DAFF", 
-                 "SG_DSR_LGRGSR", "SG_DSR_SILS", "ER_H2O_FWTL", "ER_MRN_MARIN", "ER_REG_UNFCIM", "ER_RDE_OSEX", 
-                 "AG_LND_FRST", "ER_PTD_FRWRT", "ER_PTD_TERRS", "AG_LND_FRSTPRCT", "ER_PTD_MOTN", "ER_MTN_GRNCVI", 
-                 "ER_RSK_LSTI", "ER_CBD_NAGOYA", "DC_ODA_BDVL", "DC_ODA_BDVL", "SG_INT_MBRDEV", "DC_FTA_TOTAL")
+      series<- c(envseries, series)
     }
     if(input$habitat==TRUE){
-      series <- c(series, "EN_LND_SLUM")
+      series <- c(urbanseries, series)
     }
     countrieslist <- checkcountries(series)
-    totmeans <- (rowSums(sapply(countrieslist[, -1, drop=FALSE], as.numeric))-1)/(ncol(countrieslist)-1)
-    countrieslist <- cbind(countrieslist, totmeans)
-    names(countrieslist) <- c("Country", series, "totmeans")
+    totmeans <- round((rowSums(sapply(countrieslist[, -1, drop=FALSE], as.numeric))-1)/(ncol(countrieslist)-1),3)
+    countrieslist <- cbind(countries$M49, countrieslist, totmeans)
+    names(countrieslist) <- c("M49 Code", "Country", series, "totmeans")
     return(countrieslist)
   }) 
   
@@ -76,20 +70,22 @@ shinyServer(function(input, output) {
   )
   
   output$table <- DT::renderDataTable(DT::datatable({
-     countrieslist()
+    countrieslist()
    }))
   
   output$mymap <- renderPlotly({
     countrieslist <- countrieslist()
     
-    avg_rep <- countrieslist[,c(1,ncol(countrieslist))]
+    avg_rep <- countrieslist[,c(2,ncol(countrieslist))]
     names(avg_rep) <- c("region", "avg_val")
     world_map <- map_data("world")
     map_dat <- left_join(world_map,avg_rep, by = "region")
     
-    ggplot(map_dat, aes(long, lat, group = group))+
-      geom_polygon(aes(fill = avg_val ), color = "black", size=0.1)+
-      scale_fill_viridis_c(option = "C")
+    gmap <- ggplot(map_dat, aes(long, lat, group = group, fill=avg_val, text=paste0(region)))+
+      geom_polygon(color = "black", size=0.1)+
+      scale_fill_viridis_c(option = "D", direction=-1)+
+      ggtitle("Percentage of the selected indicators that are reported in each country")
+    ggplotly(gmap)
   })
   
   output$barplot <- renderPlotly({
@@ -102,19 +98,23 @@ shinyServer(function(input, output) {
                  })
     countrieslist <- countrieslist()
     
-    LDCvalue <- mean(countrieslist$totmeans[which(countries$LDC==1)])
-    LLDCvalue <- mean(countrieslist$totmeans[which(countries$LLDC==1)])
-    SIDSvalue <- mean(countrieslist$totmeans[which(countries$SIDS==1)])
-    OECDvalue <- mean(countrieslist$totmeans[which(countries$OECD==1)])
-    countrygroups <- c("LDC", "LLDC", "SIDS", "OECD")
-    tempdat <- as.data.frame(cbind(countrygroups,c(LDCvalue, LLDCvalue, SIDSvalue, OECDvalue)))
+    LDCvalue <- round(mean(countrieslist$totmeans[which(countries$LDC==1)]), digits=3)
+    LLDCvalue <- round(mean(countrieslist$totmeans[which(countries$LLDC==1)]), digits=3)
+    SIDSvalue <- round(mean(countrieslist$totmeans[which(countries$SIDS==1)]), digits=3)
+    OECDvalue <- round(mean(countrieslist$totmeans[which(countries$OECD==1)]), digits=3)
+    totvalue <- round(mean(countrieslist$totmeans), digits=3)
+    countrygroups <- c("LDC", "LLDC", "SIDS", "OECD", "World")
+    tempdat <- as.data.frame(cbind(countrygroups,c(LDCvalue, LLDCvalue, SIDSvalue, OECDvalue, totvalue)))
     names(tempdat)<- c("group", "average_reporting")
+    tempdat$group <- as.vector(tempdat$group)
+    tempdat$average_reporting <- as.numeric(as.vector(tempdat$average_reporting))
     
-    g <- ggplot(data=tempdat, aes(x=group, y=average_reporting, fill=average_reporting))+
+    g <- ggplot(data=tempdat, aes(x=group, y=average_reporting, fill=group))+
       geom_bar(stat="identity")+
-      theme(axis.text.y=element_blank(), axis.title.y=element_blank(), axis.title.x=element_blank(), 
+      theme(axis.title.y=element_blank(), axis.title.x=element_blank(), 
             legend.position="none")+
-      ggtitle("Reporting Percentage by Country Groups")
+      ggtitle("Reporting Percentage by Country Groups")+
+      scale_y_continuous(limits=c(0,1))
     ggplotly(g)
   })
   
