@@ -69,9 +69,14 @@ shinyServer(function(input, output) {
     }
   )
   
-  output$table <- DT::renderDataTable(DT::datatable({
-    countrieslist()
-   }))
+  output$table <- DT::renderDataTable({DT::datatable(
+    countrieslist(), extensions = 'FixedColumns',
+    options = list(
+      dom = 't',
+      scrollX = TRUE,
+      scrollCollapse = TRUE
+    )
+   )})
   
   output$mymap <- renderPlotly({
     countrieslist <- countrieslist()

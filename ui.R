@@ -17,15 +17,17 @@ dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       menuItem("Dashboard", tabName = "dashboard", icon=icon("tachometer-alt")),
-      menuItem("Data Table", tabName="rawdat", icon=icon("table")),
-      menuItem("Indicators List", tabName="info", icon=icon("list")),
+      menuItem("Output Table", tabName="rawdat", icon=icon("table")),
+      menuItem("Set Indicators List", tabName="info", icon=icon("list")),
       menuItem("About", tabName="about", icon=icon("question-circle"))
+
     ),
+    
     h4("Select indicators"),
-    textInput("series", label="Series SDMX codes", value="VC_DSR_DAFF"),
-    h6("Go to the Indicators List tab to see which indicators are included in Environmental Indicators and Habitat Indicators"),
+    textInput("series", label="Enter the series SDMX codes (separate each with a space)", value="VC_DSR_DAFF SH_SAN_SAFE"),
     checkboxInput("env", "Environmental indicators", value=FALSE),
     checkboxInput("habitat", "UN-Habitat indicators", value=FALSE),
+    h5("Go to the Set Indicators List tab to see which indicators are included in Environmental Indicators and Habitat Indicators"),
     submitButton("Submit", icon=icon("arrow-right"))
     
   ),
